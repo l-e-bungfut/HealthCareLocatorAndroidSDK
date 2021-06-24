@@ -12,6 +12,9 @@ trigger:
 pool:
   vmImage: 'macos-latest'
 
+variables:
+  buildVersion: $(build.sourcebranchname)
+
 stages:
   - stage: BuildNumberGenerator  
     displayName: Build Version Tag
@@ -27,14 +30,13 @@ stages:
       condition: startsWith(variables['build.sourceBranch'], 'refs/tags/')
       variables: 
         revision: $[counter(variables['build.sourceBranch'], 0)]
-        version: $(build.sourcebranchname)
       steps:
       - bash: echo '##vso[build.updatebuildnumber]$(build.sourcebranchname)-$(revision)'
 
   - stage: BuildSteps
     jobs:
     - job: Build 
-#      condition: or(or(startsWith(variables['build.sourceBranch'], 'refs/heads/development'), startsWith(variables['build.sourceBranch'], 'refs/heads/release/')), startsWith(variables['build.sourceBranch'], 'refs/tags/'))
+      condition: or(or(startsWith(variables['build.sourceBranch'], 'refs/heads/development'), startsWith(variables['build.sourceBranch'], 'refs/heads/release/')), startsWith(variables['build.sourceBranch'], 'refs/tags/'))
       steps:
       - checkout: self
         path: s/onekey-sdk-android-lib
@@ -53,7 +55,7 @@ stages:
         inputs:
           PathToFile: 'healthcarelocator/build.gradle'
           RegEx: 'version = "1.0.0'
-          ValueToReplace: "version = \"$(version)"
+          ValueToReplace: "version = \"$(buildVersion)"
           Global: true
 
       - task: Gradle@2
