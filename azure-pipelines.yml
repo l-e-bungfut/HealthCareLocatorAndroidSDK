@@ -53,7 +53,7 @@ stages:
 
       - script: | 
           echo Moving $(privateKeyring.secureFilePath) to the project.
-          mv $(privateKeyring.secureFilePath) s/onekey-sdk-android-lib/healthcarelocator
+          mv $(privateKeyring.secureFilePath) $(Build.Repository.LocalPath)/healthcarelocator
 
       - task: Gradle@2
         inputs:
