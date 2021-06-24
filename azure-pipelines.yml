@@ -51,7 +51,7 @@ stages:
 
       - task: RegExMatchReplace@2
         inputs:
-          PathToFile: 'healthcarelocator/build.graddle'
+          PathToFile: 'healthcarelocator/build.gradle'
           RegEx: 'version = "1.0.0'
           ValueToReplace: "version = \"$(version)"
           Global: true
