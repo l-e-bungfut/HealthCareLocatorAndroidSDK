@@ -68,4 +68,4 @@ stages:
       - task: PublishPipelineArtifact@1
         inputs:
           artifactName: 'code'
-          path: s/onekey-sdk-android-lib
+          path: .
