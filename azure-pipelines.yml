@@ -40,7 +40,7 @@ stages:
   - stage: BuildSteps
     jobs:
     - job: Build 
-      condition: or(or(startsWith(variables['build.sourceBranch'], 'refs/heads/development'), startsWith(variables['build.sourceBranch'], 'refs/heads/release/')), startsWith(variables['build.sourceBranch'], 'refs/tags/'))
+#      condition: or(or(startsWith(variables['build.sourceBranch'], 'refs/heads/development'), startsWith(variables['build.sourceBranch'], 'refs/heads/release/')), startsWith(variables['build.sourceBranch'], 'refs/tags/'))
       steps:
       - checkout: self
         path: s/onekey-sdk-android-lib
