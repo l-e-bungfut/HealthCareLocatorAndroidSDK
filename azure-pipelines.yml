@@ -1,11 +1,13 @@
-# Android
-
-# Build your Android project with Gradle.
-# Add steps that test, sign, and distribute the APK, save build artifacts, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/android
+name: $(Build.SourceBranch)
 
 trigger:
-  - release/1.0.0
+  branches:
+   include:
+   - release/*
+   - development
+  tags: 
+   include:
+   - v*
 
 variables:
   buildVariant: 'assemble'
@@ -17,42 +19,52 @@ variables:
 pool:
   vmImage: 'macos-latest'
 
-steps:
-  - script: |
-      echo "======================================"
-      echo Source branch: ${{variables['build.SourceBranch']}}
-      echo Build variant: ${{variables.buildVariant}}
-      echo "======================================"
+stages:
+  - stage: BuildNumberGenerator  
+    displayName: Build Version Tag
+    jobs:
+    - job: GenerateReleaseVersionTag
+      condition: or(startsWith(variables['build.sourceBranch'], 'refs/heads/development'), startsWith(variables['build.sourceBranch'], 'refs/heads/release/'))
+      variables: 
+        revision: $[counter(variables['build.sourcebranchname'], 0)]
+      steps:
+      - bash: echo '##vso[build.updatebuildnumber]r$(build.sourcebranchname)-$(revision)'
 
-  - task: Gradle@2
-    inputs:
-      workingDirectory: ''
-      gradleWrapperFile: 'gradlew'
-      gradleOptions: '-Xmx3072m'
-      publishJUnitResults: false
-      testResultsFiles: '**/TEST-*.xml'
-      tasks: ${{variables.buildVariant}}
+    - job: GenerateMasterVersionTag
+      condition: startsWith(variables['build.sourceBranch'], 'refs/tags/')
+      variables: 
+        revision: $[counter(variables['build.sourceBranch'], 0)]
+      steps:
+      - bash: echo '##vso[build.updatebuildnumber]v$(build.sourcebranchname)-$(revision)'
 
-  - task: AndroidSigning@3
-    inputs:
-      apkFiles: '**/*.apk'
-      apksignerKeystoreFile: 'android_keystore'
-      apksignerKeystorePassword: '$(keystorepassword)'
-      apksignerKeystoreAlias: 'upload'
-      apksignerKeyPassword: '$(keypassword)'
-      zipalign: false
+  - stage: BuildSteps
+    jobs:
+    - job: Build 
+      condition: or(or(startsWith(variables['build.sourceBranch'], 'refs/heads/development'), startsWith(variables['build.sourceBranch'], 'refs/heads/release/')), startsWith(variables['build.sourceBranch'], 'refs/tags/'))
+      steps:
+      - checkout: self
+        path: s/onekey-sdk-android-lib
 
-  - task: CopyFiles@2
-    inputs:
-      contents: '**/*.apk'
-      targetFolder: '$(build.artifactStagingDirectory)'
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-      ArtifactName: 'drop'
-      publishLocation: 'Container'
+      - task: DownloadSecureFile@1
+        name: privateKeyring
+        displayName: 'Download private keyring'
+        inputs:
+          secureFile: 'secring.gpg'
 
-  - task: PublishPipelineArtifact@1
-    inputs:
-      artifactName: 'code'
-      path: '/'
+      - script: | 
+          echo Moving $(privateKeyring.secureFilePath) to the project.
+          mv $(privateKeyring.secureFilePath) s/onekey-sdk-android-lib/healthcarelocator
+
+      - task: Gradle@2
+        inputs:
+          workingDirectory: ''
+          gradleWrapperFile: 'gradlew'
+          gradleOptions: '-Xmx3072m'
+          publishJUnitResults: false
+          testResultsFiles: '**/TEST-*.xml'
+          tasks: healthcarelocator:assemble
+
+      - task: PublishPipelineArtifact@1
+        inputs:
+          artifactName: 'code'
+          path: s/onekey-sdk-android-lib
