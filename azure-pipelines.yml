@@ -7,14 +7,7 @@ trigger:
    - development
   tags: 
    include:
-   - v*
-
-variables:
-  buildVariant: 'assemble'
-  ${{ if eq(variables['build.SourceBranch'], 'refs/heads/release/1.0.0') }}:
-    buildVariant: 'assembleUatDebug'
-  ${{ if eq(variables['build.SourceBranch'], 'refs/heads/develop') }}:
-    buildVariant: 'assembleDevDebug'
+   - '*'
 
 pool:
   vmImage: 'macos-latest'
@@ -34,8 +27,9 @@ stages:
       condition: startsWith(variables['build.sourceBranch'], 'refs/tags/')
       variables: 
         revision: $[counter(variables['build.sourceBranch'], 0)]
+        version: $(build.sourcebranchname)
       steps:
-      - bash: echo '##vso[build.updatebuildnumber]v$(build.sourcebranchname)-$(revision)'
+      - bash: echo '##vso[build.updatebuildnumber]$(build.sourcebranchname)-$(revision)'
 
   - stage: BuildSteps
     jobs:
@@ -54,6 +48,13 @@ stages:
       - script: | 
           echo Moving $(privateKeyring.secureFilePath) to the project.
           mv $(privateKeyring.secureFilePath) $(Build.Repository.LocalPath)/healthcarelocator
+
+      - task: RegExMatchReplace@2
+        inputs:
+          PathToFile: 'healthcarelocator/build.graddle'
+          RegEx: 'version = "1.0.0'
+          ValueToReplace: "version = \"$(version)"
+          Global: true
 
       - task: Gradle@2
         inputs:
