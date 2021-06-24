@@ -8,6 +8,7 @@ trigger:
   - release/1.0.0
 
 variables:
+  buildVariant: 'assemble'
   ${{ if eq(variables['build.SourceBranch'], 'refs/heads/release/1.0.0') }}:
     buildVariant: 'assembleUatDebug'
   ${{ if eq(variables['build.SourceBranch'], 'refs/heads/develop') }}:
